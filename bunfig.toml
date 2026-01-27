@@ -1,0 +1,9 @@
+[test]
+preload = ["./src/lib/db/__tests__/setup.ts"]
+
+[install]
+# Ensure native dependencies are built correctly
+native = true
+
+[install.scopes]
+# Any scoped package configurations if needed
