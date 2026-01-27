@@ -13,6 +13,20 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  // Test files - allow require() imports for test setup
+  {
+    files: ["**/*.test.ts", "**/*.test.tsx", "**/test-setup.ts", "**/test-helpers.ts"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
+  // Database files - allow require() for runtime detection
+  {
+    files: ["**/db/index.ts"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

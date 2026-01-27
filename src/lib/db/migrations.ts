@@ -3,7 +3,7 @@
  * Executes schema and seed data
  */
 
-import { getDatabase, queryOne } from "./index";
+import { getDatabase } from "./index";
 
 /**
  * Embedded schema that's compatible with both better-sqlite3 and bun:sqlite
@@ -18,7 +18,7 @@ const COMPATIBLE_SCHEMA = `
 -- ============================================================================
 
 -- Lists: Task containers (Inbox + custom lists)
-CREATE TABLE lists (
+CREATE TABLE IF NOT EXISTS lists (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     color TEXT NOT NULL DEFAULT '#6366f1',
@@ -33,7 +33,7 @@ CREATE TABLE lists (
 );
 
 -- Tasks: Main task entities
-CREATE TABLE tasks (
+CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     list_id INTEGER NOT NULL,
     name TEXT NOT NULL,
@@ -61,7 +61,7 @@ CREATE TABLE tasks (
 );
 
 -- Labels: Categorical tags with icons
-CREATE TABLE labels (
+CREATE TABLE IF NOT EXISTS labels (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
     color TEXT NOT NULL DEFAULT '#8b5cf6',
@@ -73,7 +73,7 @@ CREATE TABLE labels (
 );
 
 -- Task Labels: Many-to-many relationship
-CREATE TABLE task_labels (
+CREATE TABLE IF NOT EXISTS task_labels (
     task_id INTEGER NOT NULL,
     label_id INTEGER NOT NULL,
     
@@ -90,7 +90,7 @@ CREATE TABLE task_labels (
 );
 
 -- Subtasks: Nested checkable items
-CREATE TABLE subtasks (
+CREATE TABLE IF NOT EXISTS subtasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     task_id INTEGER NOT NULL,
     name TEXT NOT NULL,
@@ -107,7 +107,7 @@ CREATE TABLE subtasks (
 );
 
 -- Attachments: File references
-CREATE TABLE attachments (
+CREATE TABLE IF NOT EXISTS attachments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     task_id INTEGER NOT NULL,
     file_name TEXT NOT NULL,
@@ -126,7 +126,7 @@ CREATE TABLE attachments (
 );
 
 -- Activity Logs: Audit trail for task changes
-CREATE TABLE activity_logs (
+CREATE TABLE IF NOT EXISTS activity_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     task_id INTEGER NOT NULL,
     action TEXT NOT NULL CHECK (action IN (
@@ -156,45 +156,45 @@ CREATE TABLE activity_logs (
 -- INDEXES
 -- ============================================================================
 
-CREATE INDEX idx_tasks_list_completed_date ON tasks(list_id, is_completed, task_date);
-CREATE INDEX idx_tasks_date ON tasks(task_date) WHERE task_date IS NOT NULL;
-CREATE INDEX idx_tasks_deadline ON tasks(deadline) WHERE deadline IS NOT NULL;
-CREATE INDEX idx_tasks_completed_updated ON tasks(is_completed, updated_at DESC);
-CREATE INDEX idx_tasks_priority ON tasks(priority) WHERE priority != 'none';
-CREATE INDEX idx_tasks_created ON tasks(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_tasks_list_completed_date ON tasks(list_id, is_completed, task_date);
+CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(task_date) WHERE task_date IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_tasks_deadline ON tasks(deadline) WHERE deadline IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_tasks_completed_updated ON tasks(is_completed, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority) WHERE priority != 'none';
+CREATE INDEX IF NOT EXISTS idx_tasks_created ON tasks(created_at DESC);
 
-CREATE INDEX idx_tasks_name ON tasks(name);
-CREATE INDEX idx_tasks_description ON tasks(description) WHERE description IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_tasks_name ON tasks(name);
+CREATE INDEX IF NOT EXISTS idx_tasks_description ON tasks(description) WHERE description IS NOT NULL;
 
-CREATE INDEX idx_task_labels_task ON task_labels(task_id);
-CREATE INDEX idx_task_labels_label ON task_labels(label_id);
+CREATE INDEX IF NOT EXISTS idx_task_labels_task ON task_labels(task_id);
+CREATE INDEX IF NOT EXISTS idx_task_labels_label ON task_labels(label_id);
 
-CREATE INDEX idx_subtasks_task ON subtasks(task_id, sort_order);
+CREATE INDEX IF NOT EXISTS idx_subtasks_task ON subtasks(task_id, sort_order);
 
-CREATE INDEX idx_attachments_task ON attachments(task_id);
+CREATE INDEX IF NOT EXISTS idx_attachments_task ON attachments(task_id);
 
-CREATE INDEX idx_activity_task_created ON activity_logs(task_id, created_at DESC);
-CREATE INDEX idx_activity_action ON activity_logs(action);
+CREATE INDEX IF NOT EXISTS idx_activity_task_created ON activity_logs(task_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_activity_action ON activity_logs(action);
 
-CREATE INDEX idx_lists_sort_order ON lists(sort_order);
+CREATE INDEX IF NOT EXISTS idx_lists_sort_order ON lists(sort_order);
 
 -- ============================================================================
 -- TRIGGERS
 -- ============================================================================
 
-CREATE TRIGGER trigger_lists_updated_at
+CREATE TRIGGER IF NOT EXISTS trigger_lists_updated_at
 AFTER UPDATE ON lists
 BEGIN
     UPDATE lists SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
 
-CREATE TRIGGER trigger_tasks_updated_at
+CREATE TRIGGER IF NOT EXISTS trigger_tasks_updated_at
 AFTER UPDATE ON tasks
 BEGIN
     UPDATE tasks SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
 
-CREATE TRIGGER trigger_task_completed
+CREATE TRIGGER IF NOT EXISTS trigger_task_completed
 AFTER UPDATE OF is_completed ON tasks
 WHEN NEW.is_completed = 1 AND OLD.is_completed = 0
 BEGIN
@@ -203,7 +203,7 @@ BEGIN
     VALUES (NEW.id, 'completed', NULL, NULL);
 END;
 
-CREATE TRIGGER trigger_task_uncompleted
+CREATE TRIGGER IF NOT EXISTS trigger_task_uncompleted
 AFTER UPDATE OF is_completed ON tasks
 WHEN NEW.is_completed = 0 AND OLD.is_completed = 1
 BEGIN
@@ -212,14 +212,14 @@ BEGIN
     VALUES (NEW.id, 'uncompleted', 'completed', 'uncompleted');
 END;
 
-CREATE TRIGGER trigger_task_created
+CREATE TRIGGER IF NOT EXISTS trigger_task_created
 AFTER INSERT ON tasks
 BEGIN
     INSERT INTO activity_logs (task_id, action, old_value, new_value)
     VALUES (NEW.id, 'created', NULL, json_object('name', NEW.name, 'list_id', NEW.list_id));
 END;
 
-CREATE TRIGGER trigger_subtask_completed
+CREATE TRIGGER IF NOT EXISTS trigger_subtask_completed
 AFTER UPDATE OF is_completed ON subtasks
 WHEN NEW.is_completed = 1 AND OLD.is_completed = 0
 BEGIN
@@ -231,7 +231,7 @@ END;
 -- VIEWS
 -- ============================================================================
 
-CREATE VIEW task_summary AS
+CREATE VIEW IF NOT EXISTS task_summary AS
 SELECT 
     t.id,
     t.name,
@@ -249,19 +249,19 @@ SELECT
 FROM tasks t
 JOIN lists l ON t.list_id = l.id;
 
-CREATE VIEW todays_tasks AS
+CREATE VIEW IF NOT EXISTS todays_tasks AS
 SELECT * FROM task_summary
 WHERE task_date = date('now')
    OR (task_date IS NULL AND is_completed = 0);
 
-CREATE VIEW upcoming_tasks AS
+CREATE VIEW IF NOT EXISTS upcoming_tasks AS
 SELECT * FROM task_summary
 WHERE task_date > date('now') 
   AND task_date <= date('now', '+7 days')
   AND is_completed = 0
 ORDER BY task_date, priority;
 
-CREATE VIEW overdue_tasks AS
+CREATE VIEW IF NOT EXISTS overdue_tasks AS
 SELECT * FROM task_summary
 WHERE task_date < date('now') 
   AND is_completed = 0
@@ -273,9 +273,11 @@ ORDER BY task_date;
  */
 function isMigrated(): boolean {
   try {
-    const result = queryOne<{ count: number }>(
+    // Get database first to ensure connection is established
+    const db = getDatabase();
+    const result = db.query(
       "SELECT COUNT(*) as count FROM sqlite_master WHERE type = 'table' AND name = 'lists'"
-    );
+    ).get() as { count: number } | undefined;
     return result?.count === 1;
   } catch {
     return false;
@@ -287,9 +289,10 @@ function isMigrated(): boolean {
  */
 function hasDefaultData(): boolean {
   try {
-    const result = queryOne<{ count: number }>(
+    const db = getDatabase();
+    const result = db.query(
       "SELECT COUNT(*) as count FROM lists WHERE id = 1"
-    );
+    ).get() as { count: number } | undefined;
     return result?.count === 1;
   } catch {
     return false;
@@ -318,22 +321,34 @@ export function runMigrations(): void {
   const db = getDatabase();
 
   // Execute entire schema in a transaction
-  db.exec("BEGIN TRANSACTION");
-
+  // Use try/finally to ensure cleanup, but handle rollback carefully
+  let transactionActive = false;
+  
   try {
+    db.exec("BEGIN TRANSACTION");
+    transactionActive = true;
+    
     // Execute schema
     db.exec(COMPATIBLE_SCHEMA);
     
     console.log("[Migrations] Schema created successfully");
 
     db.exec("COMMIT");
+    transactionActive = false;
 
-    // Insert default data
+    // Insert default data (outside transaction to avoid conflicts with triggers)
     insertDefaultData();
 
     console.log("[Migrations] Migrations completed successfully");
   } catch (error) {
-    db.exec("ROLLBACK");
+    if (transactionActive) {
+      try {
+        db.exec("ROLLBACK");
+      } catch (rollbackError) {
+        // Transaction might already be aborted, ignore
+        console.log("[Migrations] Rollback not needed or failed:", rollbackError);
+      }
+    }
     console.error("[Migrations] Migration failed:", error);
     throw error;
   }
@@ -347,7 +362,7 @@ function insertDefaultData(): void {
 
   try {
     // Check if Inbox already exists
-    const existing = queryOne<{ id: number }>("SELECT id FROM lists WHERE id = 1");
+    const existing = db.query("SELECT id FROM lists WHERE id = 1").get() as { id: number } | undefined;
     if (existing) {
       console.log("[Migrations] Default Inbox list already exists");
       return;
@@ -355,7 +370,7 @@ function insertDefaultData(): void {
 
     // Insert default Inbox list
     db.exec(`
-      INSERT OR IGNORE INTO lists (id, name, color, emoji, sort_order) 
+      INSERT OR IGNORE INTO lists (id, name, color, emoji, sort_order)
       VALUES (1, 'Inbox', '#6366f1', '📥', 0);
     `);
 
@@ -381,21 +396,33 @@ export function resetDatabase(): void {
   ).all() as { name: string }[];
 
   // Drop all tables
-  db.exec("BEGIN TRANSACTION");
-
+  let transactionActive = false;
+  
   try {
+    db.exec("BEGIN TRANSACTION");
+    transactionActive = true;
+
     for (const { name } of tables) {
       db.exec(`DROP TABLE IF EXISTS ${name}`);
       console.log(`[Migrations] Dropped table: ${name}`);
     }
 
     db.exec("COMMIT");
+    transactionActive = false;
+    
     console.log("[Migrations] All tables dropped");
 
     // Re-run migrations
     runMigrations();
   } catch (error) {
-    db.exec("ROLLBACK");
+    if (transactionActive) {
+      try {
+        db.exec("ROLLBACK");
+      } catch (rollbackError) {
+        // Transaction might already be aborted, ignore
+        console.log("[Migrations] Rollback not needed or failed:", rollbackError);
+      }
+    }
     console.error("[Migrations] Reset failed:", error);
     throw error;
   }
@@ -426,6 +453,7 @@ export function getMigrationStatus(): {
  * Verify database tables were created correctly
  */
 export function verifyTables(): { table: string; exists: boolean }[] {
+  const db = getDatabase();
   const expectedTables = [
     "lists",
     "tasks",
@@ -436,12 +464,13 @@ export function verifyTables(): { table: string; exists: boolean }[] {
     "activity_logs",
   ];
 
-  return expectedTables.map((table) => ({
-    table,
-    exists:
-      queryOne<{ count: number }>(
-        "SELECT COUNT(*) as count FROM sqlite_master WHERE type = 'table' AND name = ?",
-        [table]
-      )?.count === 1,
-  }));
+  return expectedTables.map((table) => {
+    const result = db.query(
+      "SELECT COUNT(*) as count FROM sqlite_master WHERE type = 'table' AND name = ?"
+    ).get(table) as { count: number } | undefined;
+    return {
+      table,
+      exists: result?.count === 1,
+    };
+  });
 }

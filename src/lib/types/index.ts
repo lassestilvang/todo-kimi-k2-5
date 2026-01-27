@@ -199,6 +199,14 @@ export interface UpdateSubtaskInput {
   sortOrder?: number;
 }
 
+export interface CreateAttachmentInput {
+  taskId: number;
+  fileName: string;
+  filePath: string;
+  fileSize: number;
+  mimeType: string;
+}
+
 // ============================================================================
 // FILTER / QUERY TYPES
 // ============================================================================
@@ -297,4 +305,20 @@ export interface ActivityLogRow {
   old_value: string | null;
   new_value: string | null;
   created_at: string;
+}
+
+export interface TaskSummaryRow {
+  id: number;
+  name: string;
+  is_completed: number;
+  priority: Priority;
+  task_date: string | null;
+  deadline: string | null;
+  list_id: number;
+  list_name: string;
+  list_color: string;
+  label_count: number;
+  total_subtasks: number;
+  completed_subtasks: number;
+  attachment_count: number;
 }

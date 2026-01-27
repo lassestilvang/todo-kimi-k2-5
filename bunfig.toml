@@ -1,5 +1,7 @@
 [test]
 preload = ["./src/lib/db/__tests__/setup.ts"]
+coverage = true
+coverageReporter = ["text", "lcov"]
 
 [install]
 # Ensure native dependencies are built correctly

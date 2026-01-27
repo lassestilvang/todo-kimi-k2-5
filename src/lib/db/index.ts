@@ -55,7 +55,19 @@ function createDatabase(dbPath: string): Database {
     database.pragma("journal_mode = WAL");
     database.pragma("synchronous = NORMAL");
     
-    return database as Database;
+    // Wrap better-sqlite3 to match bun:sqlite interface
+    return {
+      exec: (sql: string) => database.exec(sql),
+      query: (sql: string) => {
+        const stmt = database.prepare(sql);
+        return {
+          all: (...params: unknown[]) => stmt.all(...params),
+          get: (...params: unknown[]) => stmt.get(...params),
+          run: (...params: unknown[]) => stmt.run(...params),
+        };
+      },
+      close: () => database.close(),
+    };
   }
 }
 
