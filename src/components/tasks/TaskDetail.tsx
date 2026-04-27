@@ -157,7 +157,7 @@ export function TaskDetail({
           <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" aria-label="Task actions">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -178,7 +178,7 @@ export function TaskDetail({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button variant="ghost" size="icon" onClick={onClose}>
+            <Button variant="ghost" size="icon" aria-label="Close task details" onClick={onClose}>
               <X className="h-4 w-4" />
             </Button>
           </div>
