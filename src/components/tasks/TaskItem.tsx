@@ -24,7 +24,7 @@ export interface TaskItemProps {
   className?: string;
 }
 
-export function TaskItem({
+export const TaskItem = React.memo(function TaskItem({
   task,
   labels,
   isSelected = false,
@@ -124,7 +124,7 @@ export function TaskItem({
       )}
     </motion.div>
   );
-}
+});
 
 // Compact variant for subtasks or inline lists
 export function TaskItemCompact({
