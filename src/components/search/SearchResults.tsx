@@ -6,7 +6,7 @@
 "use client";
 
 import * as React from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import {
   Search,
   CheckCircle2,
@@ -14,13 +14,10 @@ import {
   Calendar,
   List,
   Tag,
-  Inbox,
-  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { HighlightQuery } from "./HighlightMatch";
-import type { Task, List as ListType, Label } from "@/lib/types";
 
 // Search result types
 export interface SearchResultTask {
