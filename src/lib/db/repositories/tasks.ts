@@ -18,6 +18,18 @@ import type {
 } from "@/lib/types";
 
 /**
+ * Safely parse JSON string with fallback
+ */
+function safeJsonParse<T>(json: string | null, fallback: T): T {
+  if (!json) return fallback;
+  try {
+    return JSON.parse(json) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+/**
  * Convert database row to Task object
  */
 function mapRowToTask(row: TaskRow): Task {
@@ -32,7 +44,7 @@ function mapRowToTask(row: TaskRow): Task {
     estimate: row.estimate,
     actualTime: row.actual_time,
     priority: row.priority,
-    recurrenceRule: row.recurrence_rule ? JSON.parse(row.recurrence_rule) : null,
+    recurrenceRule: safeJsonParse(row.recurrence_rule, null),
     isCompleted: Boolean(row.is_completed),
     completedAt: row.completed_at,
     createdAt: row.created_at,
